@@ -1,0 +1,10 @@
+[workspace]
+resolver = "2"
+
+members = [
+# Experimentation with the chip specifically
+    "at32f403acgu7_experiment",
+# Library-only crates (runtime, traits, etc.)
+# They are not meant to be built as standalone
+    # "lib/*"
+]

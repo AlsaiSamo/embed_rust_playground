@@ -1,0 +1,5 @@
+[toolchain]
+channel="nightly-2024-01-30"
+components = ["rust-src", "llvm-tools-preview"]
+targets = ["thumbv7em-none-eabihf", "thumbv6m-none-eabi", "riscv32imac-unknown-none-elf", "riscv32imc-unknown-none-elf"]
+#does esp32-c3 need its own target, or will riscv32imc suffice?

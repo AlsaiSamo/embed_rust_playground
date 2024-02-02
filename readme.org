@@ -1,0 +1,97 @@
+* Overview
+This repo is intended for researching embedded rust - development environment, runtime creation, etc.
+* Structure
++ This file is the repo's infodump and todo list.
++ =lib/= - in the future, library crates will go here.
++ =<crate_name>= - crate that produces a program.
++ =flake.nix= - defines development environment, packages (built with =nix build .#name=), and more (in the future).
+* Crates
+** =AT32F403ACGU7_experiment=
++ Study of runtime creation on the aforementioned chip.
++ Test crate for developing flake's features.
+* TODO Chips
++ TODO: fill in chip differences here
+* Notes
+** Flashing/debugging
+*** STM32 Debug probe
++ Looked at Black Magic Debug (standalone version) (=blackmagic= in nixpkgs)
++ Converted STM32 blackpill into Black Magic Probe
+  1. Provided shell could be updated
+     1. Add meson and ninja
+  2. Instruction on building the probe for blackpills could be updated
+     1. There is no ~blackpill-f4x1cx.ini~
+  3. Need to heat up blackpill for dfu to work
+  4. blackpill will *not* properly reboot on RST+BOOT0
+     One needs to hold BOOT0 while attaching USB cable
+     [[https://www.stm32duino.com/viewtopic.php?t=1234&start=20][Source]]
+  5. Built image does not work
+  6. Downloaded a ~.zip~ mentioned [[https://github.com/blackmagic-debug/blackmagic/issues/1454][here]]
+     This worked! It is detected properly now
+*** Using GDB with debug probe
+1. Attach the debugged MCU to the probe using proper pins (written in BMP's readme)
+2. In GDB, =target extended-remote /dev/ttyACM0= (I assume I also need to run it as root or get permissions)
+3. Do =monitor swdp_scan= to verify
+4. [[https://black-magic.org/usage/gdb-commands.html][Follow this]]
+*** probe-rs
++ Looked into =probe-rs=
+  + Allows using stlink/CMSIS-DAP/jlink probes
+- Fails to work with my probe
+  Error message: ~An error with the usage of the probe occurred~
+*** AT32
++ Checked out =dfu-util=
+  - AT32 can be dumped but not flashed
++ Built [[https://github.com/Encryptize/openocd-at32][forked openocd]] but did not include it properly in the env
+  - Could not make it work
++ Built [[https://github.com/ArteryTek/openocd][arterytek's fork of openocd]] but did not include it properly in the env
+  - Could not make it work
++ Need to find options for flashing with or without debug probe
+** MCU differences
+Differences can exist between boards of same markings.
+That is, they can be of different revisions.
+For example, rp2040 revisions fix some erratas, while stm32 blackpill replaced XTAL with a slower one.
+** Black Magic Probe
++ Can be created by flashing the firmware on the STM32
+  - STM32F411 may however be insufficient for full use, check github issues
++ Makes it easy to debug using GDB
++ GDB can also flash firmware
+** Automating development
++ GDB can be used to automate flashing
+  See [[https://black-magic.org/usage/gdb-automation.html][this]]
++ blackmagic can be built as hosted (check the website) to use a probe to flash/read/etc. without GDB
+  Currently not investigated
+** Cargo
++ Needs to include
+  #+begin_src toml
+    cargo-features = ["per-package-target"]
+    [package]
+    forced-target = "thumbv7em-none-eabihf"
+  #+end_src
+  in order for the target to be built properly. Otherwise, if =cargo build= is ran from workspace directory,
+  target setting in =.cargo/config.toml= will be ignored.
+** Nix environment
++ Does not use nixpkgs' =systemCross=.
++ =rust-overlay= is used to get the toolchain from the file
++ =crane= is used to build packages.
+  + =doCheck= has to be false because embedded rust cannot be properly tested
+  + Source clearing uses crane's filter with a filter for linker scripts
++ =nix run= could be used to flash/debug
+  Necessary flake outputs should be created
++ if cargo behaves as if target was not installed, developer should reenter the env
+  1) =direnv reload= if using default shell
+  2) Exit and enter the shell
++ Development environment could be split into one-arch-only and all-arches
+  This would be good for developers that only intend to work on one arch.
+* Tasks
+** openocd fork
++ TODO: properly include arterytek's openocd fork into the env
+  This will let me debug AT32 using that, if I want it
++ TODO: include =openocd.cfg= from =github:rust-embedded/cortex-m-quickstart=
+** Running
++ TODO: consider using make or similar to run with debugger/black magic/qemu/etc.
+** Document chip differences
+For example, AT32 aliases only 16KiB of flash to 0x0, STM32F411 does 32KiB and can also do SRAM, along with other differences.
+** CURRENT Flake
++ TODO: Make =nix run= be able to drop user into gdb, flash or verify the program
++ TODO: testing can just run =cargo check=
++ TODO: formatting, clippy, etc. - could they be done through nix?
+** NEXT [[*Chips][Document chip differences]]
