@@ -10,7 +10,104 @@ This repo is intended for researching embedded rust - development environment, r
 + Study of runtime creation on the aforementioned chip.
 + Test crate for developing flake's features.
 * TODO Chips
-+ TODO: fill in chip differences here
+** Main characteristics
+| Chip          | Core(s)       | Freq.   | SRAM | ROM/Flash  | Interfaces                                    | Timers |
+|---------------+---------------+---------+------+------------+-----------------------------------------------+--------|
+| AT32F403ACGU7 | Cortex M4F    | 240MHz  | 224K | 1M         | 3 I2C, 8 USART, 4 SPI, 2 CAN, 2 SD            |     17 |
+|---------------+---------------+---------+------+------------+-----------------------------------------------+--------|
+| STM32F411CEU6 | Cortex M4F    | 100MHz  | 512K | 128K       | 3 I2C, 3 USART, 5 SPI, 1 SD                   |     11 |
+|---------------+---------------+---------+------+------------+-----------------------------------------------+--------|
+| RP2040        | 2x Cortex M0+ | 133+MHz | 264K | 2M-16M     | 2 I2C, 2 UART, 2 SPI, PIO                     |     5+ |
+|---------------+---------------+---------+------+------------+-----------------------------------------------+--------|
+| ESP32-C3FH4   | RV32IMC       | 160MHz  | 400K | 384K/4MB   | 1 I2C, 2 UART, 3 SPI, 1 I2S, 1 RMT, BLE, WiFi |      2 |
+|---------------+---------------+---------+------+------------+-----------------------------------------------+--------|
+| CH592F        | RV32IMAC      | 80MHz   | 26K  | 512K total | 1 I2C, 4 UART, 1 SPI, BLE                     |      4 |
+** TODO secondary characteristics
++ TODO: PWM, power consumption modes, DMA, boot modes, MPU, RTC, USB endpoints, ...
+| Chip | Boot mode | PWM | DMA | MPU | RTC | Low power mode | USB endpoints |
+|------+-----------+-----+-----+-----+-----+----------------+---------------|
+|      |           |     |     |     |     |                |               |
+|------+-----------+-----+-----+-----+-----+----------------+---------------|
+|      |           |     |     |     |     |                |               |
+|------+-----------+-----+-----+-----+-----+----------------+---------------|
+|      |           |     |     |     |     |                |               |
+|------+-----------+-----+-----+-----+-----+----------------+---------------|
+|      |           |     |     |     |     |                |               |
+|------+-----------+-----+-----+-----+-----+----------------+---------------|
+|      |           |     |     |     |     |                |               |
+
+** Specific traits
+*** Artery AT32F403A
++ SRAM is split into 96K and 128K (according to datasheet)
+  - Seems to be insignificant, as they are placed right next to each other in the memory map.
++ Flash memory is split into two 512K banks, the chip can be configured to boot from either of them.
+  + They are placed right next to each other in the memory map, so they can be treated as one.
++ Configurable code/data readout protection (sLib)
+  + Code and data sections are separate
+  + Configurable region size
+  + When active, protected regions are unaffected by mass erase
+  + Deactivation is passcode protected (which is configured during activation)
+  + Deactivation necessarily does mass erase, including on previously protected regions.
++ TODO: research external memory controller (XMC)
++ CRC
+*** STMicroelectronics STM32F411xC/xE
++ Readout protection
+  1. Level 1 allows downgrading to level 0 (triggering mass erase) and forbids read/write over serial
+     - Insecure, has two methods of attacking, resulting in dumping the entire flash.
+  2. Level 2 disables bootloader and debugging; only the chip's program can make changes to it; *irreversible*
+     + Attack requires flipping bits in the flash, which requires destroying chip's top.
++ CRC
+*** Raspberry Pi RP2040
++ UF2 loader allows drag-n-drop flashing
++ Alongside with UF2 loader, PICOBOOT interface is also available
++ Can eke out 20K more SRAM if not using XIP caching and USB
++ Can be overclocked to more than 240MHz and overvolted to 1.3V
++ Has unique Programmable IO (PIO) peripheral, which is essentially a hardware for bit-banging at high speeds
+  + Example: [[https://github.com/Wren6991/PicoDVI][Bit banged DVI]], [[https://github.com/kingyoPiyo/Pico-10BASE-T][Bit banged Ethernet]]
+  + TODO: Should be described in its own section
++ Bus performance counters for profiling
++ Debug access provides access to one of the cores or Rescue debug port
+  + Can be seen with =swdp_scan=
+  + Useful when cores cannot be used (due to halted system clock).
+  + Rescue DP hard resets the chip and sets a flag about rescue reset, which bootrom checks for, clears and halts the cores.
++ Resus mechanism can recover the controller from halted system clock.
++ Bit banding for peripherals' registers
++ Single-cycle IO (SIO) is connected to both processors and provides 1 cycle access to included peripherals at the cost of not having bit banding.
+  Included:
+  1. CPUID (unique to each core)
+  2. FIFO lines between cores (two for both directions)
+  3. 32 hardware spinlocks (shared between cores)
+  4. GPIO (shared)
+  5. Interpolators (can be used to compute some functions)
+     + Can also lerp 🐸
+     + Can also clamp
++ 8 cycle integer divider (will need to support separately)
++ Writes to memory-mapped IO registers are always 32 bit sized, if data being written to it is smaller than required it will be duplicated to fill the space.
++ DMA operates faster than processors, doing reads and writes simualteniously
+  + TODO: check if this is the case for other controllers, datasheets for them does not explicitly state this.
++ DMA can do CRC for free
+*** Espressif ESP32-C3FH4
++ Flash encryption
++ Secure/Insecure environment split
++ 4K one-time-write memory (eFuse)
+  - but only 1792 bits available?
++ 8K of RTC-powered memory
++ Remote control (infrared)
++ TWAI (meant for automotive)
++ Hardware acceleration of SHA/RSA/AES/etc.
+*** WCH CH592F
++ Flash is divived as such:
+  1. 448K General
+  2. 32K Data
+  3. 24K Bootloader
+  4. 8K Info
++ Can run at clock as low as 32KHz
++ RAM is split into 2K and 24K, which are powered separately.
+  It is therefore possible to disable 24K RAM to conserve power
++ Capacitive touch input support
++ Hardware acceleration for AES
+* TODO Boards
++ TODO: describe the microcontroller boards that I currently have
 * Notes
 ** Flashing/debugging
 *** STM32 Debug probe
@@ -88,10 +185,12 @@ For example, rp2040 revisions fix some erratas, while stm32 blackpill replaced X
 + TODO: include =openocd.cfg= from =github:rust-embedded/cortex-m-quickstart=
 ** Running
 + TODO: consider using make or similar to run with debugger/black magic/qemu/etc.
-** Document chip differences
-For example, AT32 aliases only 16KiB of flash to 0x0, STM32F411 does 32KiB and can also do SRAM, along with other differences.
 ** CURRENT Flake
 + TODO: Make =nix run= be able to drop user into gdb, flash or verify the program
+  - I am currently trying the approach that does not work with rp2040, so I need to develop a different one
+    1. I am verifying that I am flashing the correct device by doing =monitor swdp_scan= and cutting the target info from the last line.
+       This assumes that there is only one target. However, rp2040 has three, two cores and a dummy that is used to reset the chip.
+    2. I could have multiple scripts in the repo for different chips.
 + TODO: testing can just run =cargo check=
 + TODO: formatting, clippy, etc. - could they be done through nix?
 ** NEXT [[*Chips][Document chip differences]]
