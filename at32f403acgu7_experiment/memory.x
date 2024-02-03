@@ -3,11 +3,14 @@
 MEMORY
 {
   /* NOTE: 1 K = 1 KiBi = 1024 bytes */
-  /* NOTE: The chip has two banks of 256K flash, placed together */
-  /* I have defined them as one 512K region. */
-  /* NOTE: 16K of flash is aliased at 0x00000000 */
-  FLASH : ORIGIN = 0x08000000, LENGTH = 512K
-  RAM : ORIGIN = 0x20000000, LENGTH = 96K
+  /* NOTE: The chip has two banks of 512 flash, placed together */
+  /* I have defined them as 1M region. */
+  /* However, the chip can be made to boot from either of the banks, */
+  /* so it should make sense to use them separately */
+  /* NOTE: 256K of flash is aliased at 0x00000000 */
+  FLASH : ORIGIN = 0x08000000, LENGTH = 1M
+  /* While datasheet describes RAM as 96K+128K, memory map defines it as one contiguous region */
+  RAM : ORIGIN = 0x20000000, LENGTH = 224K
 }
 
 ENTRY(Reset);
