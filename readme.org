@@ -5,6 +5,22 @@ This repo is intended for researching embedded rust - development environment, r
 + =lib/= - in the future, library crates will go here.
 + =<crate_name>= - crate that produces a program.
 + =flake.nix= - defines development environment, packages (built with =nix build .#name=), and more (in the future).
+* Flake
+*** Usage
++ =nix flake show= - shows what packages, dev. environments and scripts (apps) are defined
++ =nix flake update= - updates lockfile for the
++ =nix build .\#<name>= - builds the package and creates a =result= symlink
++ =nix run .\#<name> -- [args]...= - runs a script (app)
++ =nix develop= - enters development environment (add =.\#<name>= to select non-default)
++ flake.lock, =devShells.default= - defines default development evironment, =nativeBuildInputs= contains the list of installed packages - it is possible to disable those that will not be used.
+*** Scripts
++ =bmp_gdb [path] [args]...= - conect GDB to Black Magic Probe and do a scan.
++ =openocd-<name> [args]...= - connect to the chip via openocd
++ =probe-rs-<name> <command> [args]...= - run probe-rs command with =--chip <chip_name>= given automatically
+*** Dev shells
++ =default= - everything
+*** Packages
+Refer to [[*Crates][Crates]]
 * Crates
 ** =AT32F403ACGU7_experiment=
 + Study of runtime creation on the aforementioned chip.
@@ -134,6 +150,12 @@ This repo is intended for researching embedded rust - development environment, r
 ** WCH
 * Notes
 ** Flashing/debugging
+*** OpenOCD
++ TODO: document forks here
++ TODO: move openocd stuff here from other places
++ OpenOCD works with AT32, using STLINK V2 (clone), and this command:
+  =openocd -c "set CPUTAPID 0x2ba01477" -f interface/stlink.cfg -c "transport select hla_swd" -f target/stm32f1x.cfg=
+  So no need to fork it.
 *** STM32 Debug probe
 + Looked at Black Magic Debug (standalone version) (=blackmagic= in nixpkgs)
 + Converted STM32 blackpill into Black Magic Probe
@@ -155,9 +177,8 @@ This repo is intended for researching embedded rust - development environment, r
 4. [[https://black-magic.org/usage/gdb-commands.html][Follow this]]
 *** probe-rs
 + Looked into =probe-rs=
-  + Allows using stlink/CMSIS-DAP/jlink probes
-- Fails to work with my probe
-  Error message: ~An error with the usage of the probe occurred~
+  + Allows using STlink/CMSIS-DAP/jlink probes
++ STLink probe does not work with RP2040, [[https://electronics.stackexchange.com/questions/592979/programming-rp2040-with-st-link][as it does not support multidrop swd]]
 *** AT32
 + Checked out =dfu-util=
   - AT32 can be dumped but not flashed
@@ -196,25 +217,15 @@ For example, rp2040 revisions fix some erratas, while stm32 blackpill replaced X
   + =doCheck= has to be false because embedded rust cannot be properly tested
   + Source clearing uses crane's filter with a filter for linker scripts
 + =nix run= could be used to flash/debug
-  Necessary flake outputs should be created
+  - According to nix' source code, currently =apps."<name>".program= must be a path.
+    Therefore, scripts have to be written separately.
 + if cargo behaves as if target was not installed, developer should reenter the env
   1) =direnv reload= if using default shell
   2) Exit and enter the shell
 + Development environment could be split into one-arch-only and all-arches
   This would be good for developers that only intend to work on one arch.
 * Tasks
-** openocd fork
-+ TODO: properly include arterytek's openocd fork into the env
+** NEXT openocd fork
++ TODO: properly include arterytek's openocd fork into the env *as an extra that is disabled by default*
   This will let me debug AT32 using that, if I want it
-+ TODO: include =openocd.cfg= from =github:rust-embedded/cortex-m-quickstart=
-** Running
-+ TODO: consider using make or similar to run with debugger/black magic/qemu/etc.
-** CURRENT Flake
-+ TODO: Make =nix run= be able to drop user into gdb, flash or verify the program
-  - I am currently trying the approach that does not work with rp2040, so I need to develop a different one
-    1. I am verifying that I am flashing the correct device by doing =monitor swdp_scan= and cutting the target info from the last line.
-       This assumes that there is only one target. However, rp2040 has three, two cores and a dummy that is used to reset the chip.
-    2. I could have multiple scripts in the repo for different chips.
-+ TODO: testing can just run =cargo check=
-+ TODO: formatting, clippy, etc. - could they be done through nix?
-** NEXT Document boards that I currently have
+** CURRENT Document boards that I currently have
