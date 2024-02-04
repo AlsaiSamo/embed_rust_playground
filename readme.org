@@ -9,7 +9,7 @@ This repo is intended for researching embedded rust - development environment, r
 ** =AT32F403ACGU7_experiment=
 + Study of runtime creation on the aforementioned chip.
 + Test crate for developing flake's features.
-* TODO Chips
+* Chips
 ** Main characteristics
 | Chip          | Core(s)       | Freq.   | SRAM | ROM/Flash  | Interfaces                                    | Timers |
 |---------------+---------------+---------+------+------------+-----------------------------------------------+--------|
@@ -22,20 +22,29 @@ This repo is intended for researching embedded rust - development environment, r
 | ESP32-C3FH4   | RV32IMC       | 160MHz  | 400K | 384K/4MB   | 1 I2C, 2 UART, 3 SPI, 1 I2S, 1 RMT, BLE, WiFi |      2 |
 |---------------+---------------+---------+------+------------+-----------------------------------------------+--------|
 | CH592F        | RV32IMAC      | 80MHz   | 26K  | 512K total | 1 I2C, 4 UART, 1 SPI, BLE                     |      4 |
-** TODO secondary characteristics
-+ TODO: PWM, power consumption modes, DMA, boot modes, MPU, RTC, USB endpoints, ...
-| Chip | Boot mode | PWM | DMA | MPU | RTC | Low power mode | USB endpoints |
-|------+-----------+-----+-----+-----+-----+----------------+---------------|
-|      |           |     |     |     |     |                |               |
-|------+-----------+-----+-----+-----+-----+----------------+---------------|
-|      |           |     |     |     |     |                |               |
-|------+-----------+-----+-----+-----+-----+----------------+---------------|
-|      |           |     |     |     |     |                |               |
-|------+-----------+-----+-----+-----+-----+----------------+---------------|
-|      |           |     |     |     |     |                |               |
-|------+-----------+-----+-----+-----+-----+----------------+---------------|
-|      |           |     |     |     |     |                |               |
+** Secondary characteristics
++ TODO: properly count PWM channels on at32 and stm32
++ Low power draw - typical current drawn while in the deepest sleep mode possible (Standby for M4F based chips, for example)
+  + First number - without RTC
+  + Second number - with RTC
 
+| Chip          | Extra boot modes | PWM | DMA | MPU   | RTC backed memory  | Low power draw    | USB endpoints     |
+|---------------+------------------+-----+-----+-------+--------------------+-------------------+-------------------|
+| AT32F403ACGU7 | Flash bank 2     |  13 |  14 | 8*8   | 84 bytes           | 3.9 uA / 4.6 uA   | 8 bi              |
+|---------------+------------------+-----+-----+-------+--------------------+-------------------+-------------------|
+| STM32F411CEU6 | None             | 22? |  16 | 8*8   | 80 bytes           | 1.8 uA / 2.4 uA ⁋ | 1 bi, 3 IN, 3 OUT |
+|---------------+------------------+-----+-----+-------+--------------------+-------------------+-------------------|
+| RP2040        | SPI              |  16 |  12 | 8*8 † | None?              | 180 uA / 181 uA § | 16 bi             |
+|---------------+------------------+-----+-----+-------+--------------------+-------------------+-------------------|
+| ESP32-C3FH4   | None             |   6 | 3/3 | None  | 8K SRAM + 32 bytes | 1 uA / 5 uA       | 3 IN, 2 OUT       |
+|---------------+------------------+-----+-----+-------+--------------------+-------------------+-------------------|
+| CH592F        | None             | 12? |     | None  | 2K SRAM + 24K SRAM | 0.8 uA / 7.3 uA ♂ | 8 bi              |
+
++ † - subregions are equal in size
++ ⁋ - Subtract 1.2 uA if power-down reset is disabled (per datasheet)
++ § - RTC is assumed to be consuming 1.1 uA
++ ♂︎ - Numbers given for sleep mode, lowest and highest possible configurations
+  + Shutdown mode (reset on wakeup) consumes 0.4 uA / 1 uA
 ** Specific traits
 *** Artery AT32F403A
 + SRAM is split into 96K and 128K (according to datasheet)
@@ -108,6 +117,21 @@ This repo is intended for researching embedded rust - development environment, r
 + Hardware acceleration for AES
 * TODO Boards
 + TODO: describe the microcontroller boards that I currently have
+* Documentation
+** Artery
+*** [[https://www.arterychip.com/download/DS/DS_AT32F403A_V2.04_EN.pdf][AT32F403A Datasheet]]
+*** [[https://arterychip.com/download/RM/RM_AT32F403A_407_EN_V2.05.pdf][AT32F403A/407 Reference manual]]
+** STMicroelectronics
+*** [[https://www.st.com/resource/en/datasheet/stm32f411ce.pdf][ST32F411xC/E Datasheet]]
+*** [[https://www.st.com/resource/en/reference_manual/DM00119316-.pdf][STM32F411xC/E Reference manual]]
+*** [[https://www.st.com/resource/en/programming_manual/pm0214-stm32-cortexm4-mcus-and-mpus-programming-manual-stmicroelectronics.pdf][STM32 Cortex-M4F Programming manual]]
+** Raspberry Pi
+*** [[https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf][RP2040 Datasheet]]
+** Espressif
+*** [[https://www.espressif.com/sites/default/files/documentation/esp32-c3_datasheet_en.pdf][ESP32-C3 Datasheet]]
+*** [[https://www.espressif.com/sites/default/files/documentation/esp32-c3_technical_reference_manual_en.pdf#usbserialjtag][ESP32-C3 Technical reference manual]]
+*** [[https://docs.espressif.com/projects/esp-idf/en/latest/esp32c3/index.html][ESP-IDF Programming guide]]
+** WCH
 * Notes
 ** Flashing/debugging
 *** STM32 Debug probe
@@ -193,4 +217,4 @@ For example, rp2040 revisions fix some erratas, while stm32 blackpill replaced X
     2. I could have multiple scripts in the repo for different chips.
 + TODO: testing can just run =cargo check=
 + TODO: formatting, clippy, etc. - could they be done through nix?
-** NEXT [[*Chips][Document chip differences]]
+** NEXT Document boards that I currently have
