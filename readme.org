@@ -1,20 +1,15 @@
 * Overview
 This repo is intended for researching embedded rust - development environment, runtime creation, etc.
+It includes various information about the tools, MCUs and more, and a short summary of nix commands to help with learning how nix can be used for environment management.
 * Structure
 + This file is the repo's infodump and todo list.
+  + It is written in org-mode and exported to markdown.
 + =lib/= - in the future, library crates will go here.
 + =<crate_name>= - crate that produces a program.
 + =flake.nix= - defines development environment, packages (built with =nix build .#name=), and more (in the future).
-* Flake
-*** Usage
-+ =nix flake show= - shows what packages, dev. environments and scripts (apps) are defined
-+ =nix flake update= - updates lockfile for the
-+ =nix build .\#<name>= - builds the package and creates a =result= symlink
-+ =nix run .\#<name> -- [args]...= - runs a script (app)
-+ =nix develop= - enters development environment (add =.\#<name>= to select non-default)
-+ flake.lock, =devShells.default= - defines default development evironment, =nativeBuildInputs= contains the list of installed packages - it is possible to disable those that will not be used.
+* Flake outputs
 *** Scripts
-+ =bmp_gdb [path] [args]...= - conect GDB to Black Magic Probe and do a scan.
++ =bmp_gdb [path] [args]...= - conect GDB to Black Magic Probe and do a SWD scan.
 + =openocd-<name> [args]...= - connect to the chip via openocd
 + =probe-rs-<name> <command> [args]...= - run probe-rs command with =--chip <chip_name>= given automatically
 *** Dev shells
@@ -89,7 +84,6 @@ Refer to [[*Crates][Crates]]
 + Can be overclocked to more than 240MHz and overvolted to 1.3V
 + Has unique Programmable IO (PIO) peripheral, which is essentially a hardware for bit-banging at high speeds
   + Example: [[https://github.com/Wren6991/PicoDVI][Bit banged DVI]], [[https://github.com/kingyoPiyo/Pico-10BASE-T][Bit banged Ethernet]]
-  + TODO: Should be described in its own section
 + Bus performance counters for profiling
 + Debug access provides access to one of the cores or Rescue debug port
   + Can be seen with =swdp_scan=
@@ -104,7 +98,7 @@ Refer to [[*Crates][Crates]]
   3. 32 hardware spinlocks (shared between cores)
   4. GPIO (shared)
   5. Interpolators (can be used to compute some functions)
-     + Can also lerp 🐸
+     + Can also  🐸 lerp 🐸
      + Can also clamp
 + 8 cycle integer divider (will need to support separately)
 + Writes to memory-mapped IO registers are always 32 bit sized, if data being written to it is smaller than required it will be duplicated to fill the space.
@@ -131,29 +125,46 @@ Refer to [[*Crates][Crates]]
   It is therefore possible to disable 24K RAM to conserve power
 + Capacitive touch input support
 + Hardware acceleration for AES
-* TODO Boards
-+ TODO: describe the microcontroller boards that I currently have
+* Boards
+** WeAct BlackPill STM32 v3.0
++ [[https://aliexpress.ru/item/1005001456186625.html][AliExpress]]
++ 8MHz XTAL version is preferred
++ On 25MHz XTAL BlackPill's revision, it needs to be heated up for dfu to work properly
++ There may be difference between RST+BOOT0 and holding BOOT0 while attaching USB cable
+  [[https://www.stm32duino.com/viewtopic.php?t=1234&start=20][Source]]
+** WeAct BlackPill AT32 v1.0
++ [[https://aliexpress.ru/item/1005004842376803.html][AliExpress]]
+** WeAct CH592F
++ [[https://aliexpress.ru/item/1005006117859297.html][AliExpress]]
+** WeAct RP2040
++ [[https://aliexpress.ru/item/1005003708090298.html][AliExpress]]
+** WeAct ESP32-C3FH4
++ [[https://aliexpress.ru/item/1005004960064227.html][AliExpress]]
 * Documentation
 ** Artery
-*** [[https://www.arterychip.com/download/DS/DS_AT32F403A_V2.04_EN.pdf][AT32F403A Datasheet]]
-*** [[https://arterychip.com/download/RM/RM_AT32F403A_407_EN_V2.05.pdf][AT32F403A/407 Reference manual]]
+*** [[https://www.arterychip.com/en/product/AT32F403A.jsp#Resource][AT32F403A Series resources]]
+**** [[https://www.arterychip.com/download/DS/DS_AT32F403A_V2.04_EN.pdf][AT32F403A Datasheet]]
+**** [[https://www.arterychip.com/download/RM/RM_AT32F403A_407_EN_V2.05.pdf][AT32F403A/407 Reference manual]]
+**** [[https://www.arterychip.com/download/Errata/ES0002_AT32F403A_407_Errata_Sheet_EN_V2.0.10.pdf][AT32F403A/407 Erratas]]
+**** [[https://www.arterychip.com/download/APNOTE/AN0040_AT32F403A_407_Security_Library_Application_Note_EN_V2.0.2.pdf][AT32F403A/407 sLib Application note]]
 ** STMicroelectronics
 *** [[https://www.st.com/resource/en/datasheet/stm32f411ce.pdf][ST32F411xC/E Datasheet]]
 *** [[https://www.st.com/resource/en/reference_manual/DM00119316-.pdf][STM32F411xC/E Reference manual]]
+*** [[https://www.st.com/resource/en/errata_sheet/dm00137034-stm32f411xc-and-stm32f411xe-device-limitations-stmicroelectronics.pdf][STM32F411xC/E Erratas]]
 *** [[https://www.st.com/resource/en/programming_manual/pm0214-stm32-cortexm4-mcus-and-mpus-programming-manual-stmicroelectronics.pdf][STM32 Cortex-M4F Programming manual]]
 ** Raspberry Pi
 *** [[https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf][RP2040 Datasheet]]
+Also doubles as a reference manual and includes erratas
 ** Espressif
 *** [[https://www.espressif.com/sites/default/files/documentation/esp32-c3_datasheet_en.pdf][ESP32-C3 Datasheet]]
 *** [[https://www.espressif.com/sites/default/files/documentation/esp32-c3_technical_reference_manual_en.pdf#usbserialjtag][ESP32-C3 Technical reference manual]]
+*** [[https://www.espressif.com/sites/default/files/documentation/esp32-c3_errata_en.pdf][ESP32-C3 Erratas]]
 *** [[https://docs.espressif.com/projects/esp-idf/en/latest/esp32c3/index.html][ESP-IDF Programming guide]]
 ** WCH
-* Notes
-  So no need to fork it.
-*** STM32 Debug probe
-+ Looked at Black Magic Debug (standalone version) (=blackmagic= in nixpkgs)
-+ Converted STM32 blackpill into Black Magic Probe
-  1. Provided shell could be updated
+*** [[https://www.wch-ic.com/downloads/CH592DS1_PDF.html][CH592F Datasheet download page]]
+*** [[https://www.wch-ic.com/downloads/file/378.html?time=2024-02-05%2021:32:50&code=27Y2KDfBV1Z4gWLChDwF2hbUxEY0bipqRGwSeo7J][CH592F Datasheet]]
+*** [[https://www.wch-ic.com/downloads/QingKeV4_Processor_Manual_PDF.html][QingKeV4 Processor Manual download page]]
+*** [[https://www.wch-ic.com/downloads/file/367.html?time=2024-02-05%2021:34:27&code=Nq7FLVBIzX6QixNOBW3QoCdHCefG0peN4hij9kdI][QingKeV4 Processor Manual]]
 * Tools
 ** OpenOCD
 + Original version does not explicitly support at32 chips
@@ -164,62 +175,79 @@ Refer to [[*Crates][Crates]]
     However, it may not work in full; for example, it reports that the chip has one flash bank of size 0.
 + There is [[https://github.com/ArteryTek/openocd][arterytek's fork]] that adds at32 support
 + There is [[https://github.com/Encryptize/openocd-at3][this fork]] but I haven't tried it properly
-     1. Add meson and ninja
-  2. Instruction on building the probe for blackpills could be updated
-     1. There is no ~blackpill-f4x1cx.ini~
-  3. Need to heat up blackpill for dfu to work
-  4. blackpill will *not* properly reboot on RST+BOOT0
-     One needs to hold BOOT0 while attaching USB cable
-     [[https://www.stm32duino.com/viewtopic.php?t=1234&start=20][Source]]
-  5. Built image does not work
-  6. Downloaded a ~.zip~ mentioned [[https://github.com/blackmagic-debug/blackmagic/issues/1454][here]]
-     This worked! It is detected properly now
+** GDB
++ Can be used in scripts to automate flashing/dumping/etc.
 *** Using GDB with debug probe
-1. Attach the debugged MCU to the probe using proper pins (written in BMP's readme)
-2. In GDB, =target extended-remote /dev/ttyACM0= (I assume I also need to run it as root or get permissions)
-3. Do =monitor swdp_scan= to verify
-4. [[https://black-magic.org/usage/gdb-commands.html][Follow this]]
-*** probe-rs
-+ Looked into =probe-rs=
-  + Allows using STlink/CMSIS-DAP/jlink probes
+[[https://black-magic.org/usage/gdb-commands.html][Commands]] from Black Magic's site
+1. Attach the microcontroller to the probe and connect the probe to the computer
+2. Launch GDB
+3. Run =target extended-remote /dev/ttyACM0= to attach to the probe
+4. Run =monitor swdp_scan= to scan the microcontroller for the targets to attach to
+5. Run =attach <number>= to attach to one of the targets
+** Black Magic
++ [[https://github.com/blackmagic-debug/blackmagic][Source]]
++ Black Magic Probe can be bought or created by flashing a firmware on a supported microcontroller
+  + Includes on-probe GDB
+  + STM32F411 may have insufficient capabilities to support all features, check github issues
++ Can be used as a standalone (hosted), currently not investigated
+  + Package is named =blackmagic=
+*** Conversion of BlackPill into a BMP
++ What to watch out for:
+  1. There is no ~blackpill-f4x1cx.ini~, it was replaced with other files
+  2. Provided shell.nix could be updated
+     1. Add meson and ninja
+     2. Replace nixpkgs download with =import <nixpkgs>=, which will use system nixkpgs
++ Process:
+  1. Built image from the source, it did not work
+  2. Downloaded a ~.zip~ file mentioned [[https://github.com/blackmagic-debug/blackmagic/issues/1454][here]], which had prebuilt images
+     This worked! It is detected properly now
+** probe-rs
++ Relies on other probes (STlink/JLink/CMSIS-DAP)
 + STLink probe does not work with RP2040, [[https://electronics.stackexchange.com/questions/592979/programming-rp2040-with-st-link][as it does not support multidrop swd]]
-** MCU differences
-Differences can exist between boards of same markings.
-That is, they can be of different revisions.
-For example, rp2040 revisions fix some erratas, while stm32 blackpill replaced XTAL with a slower one.
-** Black Magic Probe
-+ Can be created by flashing the firmware on the STM32
-  - STM32F411 may however be insufficient for full use, check github issues
-+ Makes it easy to debug using GDB
-+ GDB can also flash firmware
-** Automating development
-+ GDB can be used to automate flashing
-  See [[https://black-magic.org/usage/gdb-automation.html][this]]
-+ blackmagic can be built as hosted (check the website) to use a probe to flash/read/etc. without GDB
-  Currently not investigated
-** Cargo
-+ Needs to include
-  #+begin_src toml
-    cargo-features = ["per-package-target"]
-    [package]
-    forced-target = "thumbv7em-none-eabihf"
-  #+end_src
-  in order for the target to be built properly. Otherwise, if =cargo build= is ran from workspace directory,
-  target setting in =.cargo/config.toml= will be ignored.
-** Nix environment
-+ Does not use nixpkgs' =systemCross=.
+** TODO dfu-util
++ STM32 is fully supported.
++ I can dump AT32 but not flash: =Only DfuSe file version 1.1a is supported=
+  TODO: research how to resolve the issue
++ RP2040 does not support DFU.
++ ESP32-C3 does not support DFU.
++ CH592F does not seem to support DFU.
+** Nix
+*** Usage
++ direnv - tool used to automatically enter and leave the dev environment.
+  + if cargo behaves as if target was not installed, the developer should reenter the env.
+    a) =direnv reload= if using default shell
+    b) Exit and enter the shell
++ =nix flake show= - shows what packages, dev. environments and scripts (apps) are defined
++ =nix flake update= - updates the lockfile
++ =nix build .\#<name>= - builds the package and creates a =result= symlink
++ =nix run .\#<name> -- [args]...= - runs a script (app)
++ =nix develop= - enters development environment (add =.\#<name>= to select non-default)
++ flake.nix, =devShells.default= - defines default development evironment, =nativeBuildInputs= contains the list of installed packages - it is possible to disable those that will not be used.
+*** Details important for writing a flake
++ At the time of writing, =apps."<name>".program= must be a path.
++ nixpkgs has =systemCross= option meant for cross compiling. It is not used here, as it is not needed and it can lead to confusing outcomes, such as attempting to download gcc version that would run on the microcontroller.
++ =doCheck= has to be false for derivatoins because embedded rust cannot be properly tested without a microcontroller.
++ Source clearing was made to use crane's filter together with a filter for linker scripts.
+*** Misc
 + =rust-overlay= is used to get the toolchain from the file
 + =crane= is used to build packages.
-  + =doCheck= has to be false because embedded rust cannot be properly tested
-  + Source clearing uses crane's filter with a filter for linker scripts
-+ =nix run= could be used to flash/debug
-  - According to nix' source code, currently =apps."<name>".program= must be a path.
-    Therefore, scripts have to be written separately.
-+ if cargo behaves as if target was not installed, developer should reenter the env
-  1) =direnv reload= if using default shell
-  2) Exit and enter the shell
-+ Development environment could be split into one-arch-only and all-arches
-  This would be good for developers that only intend to work on one arch.
+** Cargo
++ Cross-compilation requires:
+  1. A toolchain which can compile to the required target
+     + This can be done with =rust-toolchain.toml=
+  2. Instructing cargo to compile for the target
+     1. There is a CLI option
+     2. =.cargo/config.toml= can be created for this
+        - This will be ignored if =cargo build= is ran from workspace directory.
+     3. =forced-target= can be added to =Cargo.toml=
+  3. Linker requires a linker script.
+     + =build.rs= is required to copy the linker script to the compilation environment
+     + The script itself is required too.
+* Note inbox
+Unsorted notes go here.
++ All available peripherals should be described in a separate section
++ Chips can be very interesting, and only talking about their peripherals might not be enough.
+  Prime example: rp2040 seems to be made for pure bandwidth - PIO can be pushed to 300+ Mbps, bus fabric allows great paralellisation, striped SRAM, etc.
 * Tasks
 ** CANCEL OpenOCD fork
 + TODO: properly include arterytek's openocd fork into the env *as an extra that is disabled by default*
