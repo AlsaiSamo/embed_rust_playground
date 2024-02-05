@@ -149,17 +149,21 @@ Refer to [[*Crates][Crates]]
 *** [[https://docs.espressif.com/projects/esp-idf/en/latest/esp32c3/index.html][ESP-IDF Programming guide]]
 ** WCH
 * Notes
-** Flashing/debugging
-*** OpenOCD
-+ TODO: document forks here
-+ TODO: move openocd stuff here from other places
-+ OpenOCD works with AT32, using STLINK V2 (clone), and this command:
-  =openocd -c "set CPUTAPID 0x2ba01477" -f interface/stlink.cfg -c "transport select hla_swd" -f target/stm32f1x.cfg=
   So no need to fork it.
 *** STM32 Debug probe
 + Looked at Black Magic Debug (standalone version) (=blackmagic= in nixpkgs)
 + Converted STM32 blackpill into Black Magic Probe
   1. Provided shell could be updated
+* Tools
+** OpenOCD
++ Original version does not explicitly support at32 chips
+  + It can work with at32f403acgu7 with this command:
+    #+begin_src shell
+    openocd -c "set CPUTAPID 0x2ba01477" -f interface/stlink.cfg -c "transport select hla_swd" -f target/stm32f1x.cfg
+    #+end_src
+    However, it may not work in full; for example, it reports that the chip has one flash bank of size 0.
++ There is [[https://github.com/ArteryTek/openocd][arterytek's fork]] that adds at32 support
++ There is [[https://github.com/Encryptize/openocd-at3][this fork]] but I haven't tried it properly
      1. Add meson and ninja
   2. Instruction on building the probe for blackpills could be updated
      1. There is no ~blackpill-f4x1cx.ini~
@@ -179,14 +183,6 @@ Refer to [[*Crates][Crates]]
 + Looked into =probe-rs=
   + Allows using STlink/CMSIS-DAP/jlink probes
 + STLink probe does not work with RP2040, [[https://electronics.stackexchange.com/questions/592979/programming-rp2040-with-st-link][as it does not support multidrop swd]]
-*** AT32
-+ Checked out =dfu-util=
-  - AT32 can be dumped but not flashed
-+ Built [[https://github.com/Encryptize/openocd-at32][forked openocd]] but did not include it properly in the env
-  - Could not make it work
-+ Built [[https://github.com/ArteryTek/openocd][arterytek's fork of openocd]] but did not include it properly in the env
-  - Could not make it work
-+ Need to find options for flashing with or without debug probe
 ** MCU differences
 Differences can exist between boards of same markings.
 That is, they can be of different revisions.
@@ -225,7 +221,11 @@ For example, rp2040 revisions fix some erratas, while stm32 blackpill replaced X
 + Development environment could be split into one-arch-only and all-arches
   This would be good for developers that only intend to work on one arch.
 * Tasks
-** NEXT openocd fork
+** CANCEL OpenOCD fork
 + TODO: properly include arterytek's openocd fork into the env *as an extra that is disabled by default*
   This will let me debug AT32 using that, if I want it
-** CURRENT Document boards that I currently have
+*** Attempt
++ Added =openocd-artery= and added running it as an app.
+  + It overrides the original's source and version.
+  + I appreciate that making nix build something can be done by the lightest sneeze as long as it includes =${<derivation name>}=
+  + Because the fork is too old, it will require proper packaging, which I don't want to do.

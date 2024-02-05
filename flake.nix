@@ -35,12 +35,15 @@
         craneFilters = path: type: (linkerScriptFilter path type) || (craneLib.filterCargoSources path type);
 
         #Attaches GDB to BMP
-        #TODO: make it possible for the first argument to not be a path -> use default path.
         scriptBMP_GDB = pkgs.writeScript "bmp-gdb-attach.sh" ''
           #!/usr/bin/env sh
-          #path to the debugged device
-          SERIAL_PATH=''${1:-'/dev/ttyACM0'}
-          shift
+          #if the first argument is not a path (for example if it is --tui), use default and don't shift
+          if [ ! -e "$1" ]; then
+            SERIAL_PATH='/dev/ttyACM0'
+          else
+            SERIAL_PATH=''${1:-'/dev/ttyACM0'}
+            shift
+          fi
 
           if [ ! -c "$SERIAL_PATH" ]; then
             echo "error: $SERIAL_PATH does not exist"
@@ -66,12 +69,14 @@
             shift
             ${pkgs.probe-rs}/bin/probe-rs $COMMAND --chip ${chipName} "$@"
           '';
+
         scriptOpenOCDFor = shortName: target: CPUTAPID: interface: transport:
           pkgs.writeScript "openocd-${shortName}.sh" ''
             #!/usr/bin/env sh
             ${pkgs.openocd}/bin/openocd -c "set CPUTAPID ${CPUTAPID}" -f interface/${interface} \
             -c "transport select ${transport}"  -f target/${target} "$@"
           '';
+
         genScripts = list:
           builtins.foldl' (acc: elem:
             {
@@ -86,6 +91,17 @@
             }
             // acc) {}
           list;
+        #Fork of openocd by arterytek that supports at32
+        #TODO: the source is too old for a simple override like this
+        openocd-artery = pkgs.openocd.overrideAttrs {
+          version = "0.10.0";
+          src = pkgs.fetchFromGitHub {
+            owner = "ArteryTek";
+            repo = "openocd";
+            rev = "03c994a730a90ac4056b5f0b4c715e2af2630461";
+            sha256 = "sha256-u8x1X0J9hHYlk+l1VwwGd5jJ92t6UWAw7SARL7rpf7M=";
+          };
+        };
       in {
         devShells.default = pkgs.mkShell {
           nativeBuildInputs = with pkgs;
@@ -115,6 +131,12 @@
               type = "app";
               program = "${scriptBMP_GDB}";
             };
+            # Uses github:arterytek/openocd (fork that adds proper support for at32)
+            # TODO: package the fork first
+            # openocd-arterytek-at32 = {
+            #   type = "app";
+            #   program = "${openocd-artery}/bin/openocd";
+            # };
           }
           // genScripts [
             {
@@ -124,7 +146,6 @@
               interface = "stlink.cfg";
               cputapid = "0x2ba01477";
               transport = "hla_swd";
-              #TODO: is it ok not to have transport here?
             }
             #TODO: rp2040 will not work with stlink because stlink cannot do multidrop swd
             #(which is needed because the chip is multicore).
